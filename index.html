@@ -713,7 +713,7 @@
     color: var(--text-secondary);
     line-height: 2;
     max-width: 480px;
-     white-space: pre-line;
+    white-space: pre-line;
   }
   .char-display-cv {
     margin-top: 1rem;
@@ -940,6 +940,40 @@
   .reveal-delay-2 { transition-delay: 0.2s; }
   .reveal-delay-3 { transition-delay: 0.3s; }
   .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ── LIGHTBOX ── */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 7, 4, 0.94);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  cursor: zoom-out;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lightbox.active {
+  display: flex;
+  opacity: 1;
+}
+
+.lightbox-inner {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.lightbox-inner img {
+  max-width: 100%;
+  max-height: 90vh;
+  border: 8px solid var(--glass-border);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
+  border-radius: 6px;
+}
 </style>
 </head>
 
@@ -1211,11 +1245,11 @@
   </div>
 
   <div class="media-scroll">
-    <div class="media-thumb">Screenshot 01</div>
-    <div class="media-thumb">Screenshot 02</div>
-    <div class="media-thumb">Screenshot 03</div>
-    <div class="media-thumb">Screenshot 04</div>
-    <div class="media-thumb">Screenshot 05</div>
+    <div class="media-thumb"><img src="assets/assets01.png" alt="Screenshot 01">Screenshot 01</div>
+    <div class="media-thumb"><img src="assets/assets02.png" alt="Screenshot 02">Screenshot 02</div>
+    <div class="media-thumb"><img src="assets/assets03.png" alt="Screenshot 03">Screenshot 03</div>
+    <div class="media-thumb"><img src="assets/assets04.png" alt="Screenshot 04">Screenshot 04</div>
+    <div class="media-thumb"><img src="assets/assets05.png" alt="Screenshot 05">Screenshot 05</div>
   </div>
 </section>
 
@@ -1291,7 +1325,12 @@
 
   </div>
 </footer>
-
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox">
+  <div class="lightbox-inner">
+    <img id="lightbox-image" src="" alt="">
+  </div>
+</div>
 
 <!-- ── SCRIPTS ── -->
 <script>
@@ -1344,7 +1383,7 @@ const characters = [
 お酒の知識は深く、客の好みや気分を読んで最適な一杯を提供する。
 今回はとある理由で、プレイヤーにお見せを任せることとなり、その間は友人たちの国や世界に旅行に出かけることに。
 彼の不在中、プレイヤーはバーを切り盛りしながら、訪れる客たちと交流していくことになります。`,
-      cv: 'ベルモンド・バンデラス（にじさんじ所属）',
+      cv: '',
     },
     {
       id: 'char2',
@@ -1470,6 +1509,36 @@ const characters = [
       ? 'rgba(10,7,4,0.92)'
       : 'linear-gradient(to bottom, rgba(10,7,4,0.85) 0%, transparent 100%)';
   });
+
+  // ── MEDIA LIGHTBOX ─────────────────────
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-image');
+
+document.querySelectorAll('.media-thumb').forEach(thumb => {
+  thumb.style.cursor = 'zoom-in';
+  thumb.addEventListener('click', () => {
+    const img = thumb.querySelector('img');
+    if (img) {
+      lightboxImg.src = img.src;
+      lightboxImg.alt = img.alt || 'Screenshot';
+      lightbox.classList.add('active');
+    }
+  });
+});
+
+// 画像以外をクリックしたら閉じる
+lightbox.addEventListener('click', (e) => {
+  if (e.target === lightbox) {
+    lightbox.classList.remove('active');
+  }
+});
+
+// ESCキーでも閉じる
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+    lightbox.classList.remove('active');
+  }
+});
 </script>
 
 </body>
