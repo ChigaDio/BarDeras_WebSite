@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bar Deras -デラス- | にじさんじ 非公式ファンゲーム</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+JP:wght@300;400;500&family=Bebas+Neue&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --amber-deep: #7a3e00;
+    --amber-mid: #b96a00;
+    --amber-light: #e8a040;
+    --amber-pale: #f5c97a;
+    --amber-glow: #ffd98a;
+    --red-accent: #c0392b;
+    --red-soft: #e05040;
+    --ice-white: #e8f4f8;
+    --ice-blue: #c0dce8;
+    --glass-bg: rgba(255, 220, 140, 0.06);
+    --glass-border: rgba(255, 220, 140, 0.18);
+    --dark-base: #0a0704;
+    --dark-mid: #120e07;
+    --dark-panel: rgba(10, 7, 4, 0.72);
+    --text-primary: #f0e0c0;
+    --text-secondary: #b89870;
+    --text-muted: #7a6450;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-heading: 'Cormorant Garamond', serif;
+    --font-body: 'Noto Serif JP', serif;
+    --font-sub: 'Rajdhani', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--dark-base);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px;
+    mix-blend-mode: overlay;
+  }
+
+  /* ── LOADER ── */
+  #loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--dark-base);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .loader-glass {
+    position: relative;
+    width: 80px;
+    height: 96px;
+  }
+  .loader-glass svg { width: 100%; height: 100%; }
+
+  .glass-liquid { animation: fill-glass 2.4s ease-out forwards; }
+  @keyframes fill-glass {
+    0% { clip-path: inset(100% 0 0 0); }
+    100% { clip-path: inset(0% 0 0 0); }
+  }
+
+  .ice-cube { animation: rock-ice 1.8s ease-in-out infinite alternate; }
+  @keyframes rock-ice {
+    from { transform: rotate(-4deg) translate(-1px, 1px); }
+    to { transform: rotate(4deg) translate(1px, -1px); }
+  }
+
+  .loader-label {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.6em;
+    color: var(--amber-light);
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.6s ease forwards;
+  }
+  .loader-bar-wrap {
+    width: 180px;
+    height: 1px;
+    background: var(--glass-border);
+    overflow: hidden;
+  }
+  .loader-bar {
+    height: 100%;
+    background: var(--amber-light);
+    animation: progress 2.2s ease-out forwards;
+  }
+  @keyframes progress { 0% { width: 0%; } 100% { width: 100%; } }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.2rem clamp(1.5rem, 6vw, 5rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(10,7,4,0.85) 0%, transparent 100%);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: background 0.3s ease;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+    color: var(--amber-glow);
+  }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    align-items: center;
+  }
+  @media (max-width: 600px) { .nav-links { display: none; } }
+  .nav-links a {
+    font-family: var(--font-sub);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+  .nav-links a:hover { color: var(--amber-glow); }
+  .nav-x-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .nav-x-link svg { width: 14px; height: 14px; fill: currentColor; }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    padding: 2rem;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .hero-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 70%,
+        rgba(184, 106, 0, 0.35) 0%,
+        rgba(122, 62, 0, 0.18) 45%,
+        transparent 75%),
+      radial-gradient(ellipse 30% 25% at 50% 65%,
+        rgba(248, 200, 100, 0.22) 0%,
+        transparent 60%),
+      linear-gradient(180deg, #0a0704 0%, #120e07 40%, #1a1008 70%, #0f0c06 100%);
+  }
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    bottom: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    height: 120px;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(192, 220, 232, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 40%, rgba(232, 244, 248, 0.08) 0%, transparent 55%);
+    border-radius: 50%;
+    filter: blur(8px);
+  }
+
+  /* 浮かぶ粒子 */
+  .hero-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(232, 160, 64, 0.3);
+    animation: float-particle linear infinite;
+  }
+  @keyframes float-particle {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+  }
+
+  .hero-fan-badge {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-sub);
+    font-size: 0.7rem;
+    letter-spacing: 0.4em;
+    color: var(--red-soft);
+    text-transform: uppercase;
+    border: 1px solid rgba(192, 57, 43, 0.4);
+    padding: 0.3em 1em;
+    margin-bottom: 10.2rem;
+    opacity: 0;
+    animation: fade-in-up 0.8s 0.2s ease forwards;
+  }
+
+  .hero-eyebrow {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-sub);
+    font-size: 0.8rem;
+    letter-spacing: 0.5em;
+    color: var(--amber-light);
+    opacity: 0;
+    text-transform: uppercase;
+    animation: fade-in-up 0.9s 0.3s ease forwards;
+  }
+
+  .hero-title {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 14vw, 11rem);
+    line-height: 0.92;
+    letter-spacing: 0.04em;
+    color: var(--amber-glow);
+    text-shadow:
+      0 0 40px rgba(232, 160, 64, 0.4),
+      0 0 80px rgba(184, 106, 0, 0.2);
+    opacity: 0;
+    animation: fade-in-up 1s 0.6s ease forwards;
+    margin: 0.4em 0 0.2em;
+  }
+
+  .hero-title-jp {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-heading);
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    color: var(--amber-pale);
+    letter-spacing: 0.5em;
+    font-weight: 300;
+    opacity: 0;
+    animation: fade-in-up 0.9s 0.75s ease forwards;
+    margin-bottom: 0.5em;
+  }
+
+  .hero-subtitle {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    color: var(--text-secondary);
+    letter-spacing: 0.12em;
+    opacity: 0;
+    animation: fade-in-up 0.9s 0.9s ease forwards;
+  }
+
+  .hero-divider {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem auto;
+    width: min(320px, 80%);
+    opacity: 0;
+    animation: fade-in-up 0.8s 1.1s ease forwards;
+  }
+  .hero-divider span { flex: 1; height: 1px; background: var(--glass-border); }
+  .hero-divider i {
+    font-style: normal;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--amber-light);
+    letter-spacing: 0.2em;
+  }
+
+  .hero-desc {
+    position: relative;
+    z-index: 1;
+    max-width: 580px;
+    font-size: clamp(0.85rem, 1.5vw, 1rem);
+    color: var(--text-secondary);
+    line-height: 2;
+    opacity: 0;
+    animation: fade-in-up 0.9s 1.3s ease forwards;
+  }
+
+  .hero-cta {
+    position: relative;
+    z-index: 1;
+    margin-top: 2.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fade-in-up 0.9s 1.5s ease forwards;
+  }
+
+  .btn-primary {
+    padding: 0.85em 2.4em;
+    background: linear-gradient(135deg, var(--amber-mid), var(--amber-deep));
+    color: var(--amber-glow);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    letter-spacing: 0.25em;
+    border: 1px solid var(--amber-mid);
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--amber-light), var(--amber-mid));
+    box-shadow: 0 0 24px rgba(184, 106, 0, 0.5);
+  }
+  .btn-primary svg { width: 14px; height: 14px; fill: currentColor; }
+
+  .btn-ghost {
+    padding: 0.85em 2.4em;
+    background: transparent;
+    color: var(--amber-pale);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    letter-spacing: 0.25em;
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: all 0.3s ease;
+  }
+  .btn-ghost:hover {
+    border-color: var(--amber-light);
+    color: var(--amber-glow);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    opacity: 0;
+    animation: fade-in-up 0.8s 2s ease forwards;
+  }
+  .scroll-hint span {
+    font-family: var(--font-sub);
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--amber-mid), transparent);
+    animation: scroll-pulse 2s ease-in-out infinite;
+  }
+  @keyframes scroll-pulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(0.6); transform-origin: top; }
+    50% { opacity: 1; transform: scaleY(1); transform-origin: top; }
+  }
+
+  /* ── SECTION COMMONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: clamp(4rem, 10vw, 8rem) clamp(1.5rem, 6vw, 5rem);
+  }
+  .section-inner { max-width: 1060px; margin: 0 auto; }
+  .section-tag {
+    font-family: var(--font-sub);
+    font-size: 0.72rem;
+    letter-spacing: 0.55em;
+    color: var(--amber-light);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.6rem;
+  }
+  .section-heading {
+    font-family: var(--font-heading);
+    font-weight: 300;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.15;
+    color: var(--amber-glow);
+    margin-bottom: 0.3em;
+  }
+  .section-heading em { font-style: italic; color: var(--amber-pale); }
+  .section-lead {
+    font-size: clamp(0.85rem, 1.4vw, 1rem);
+    color: var(--text-secondary);
+    max-width: 640px;
+    line-height: 2;
+  }
+  .divider-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── OVERVIEW ── */
+  #overview {
+    background:
+      radial-gradient(ellipse 70% 40% at 80% 50%,
+        rgba(122, 62, 0, 0.12) 0%,
+        transparent 65%),
+      var(--dark-mid);
+  }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem 5rem;
+    margin-top: 3.5rem;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .overview-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  }
+  .overview-text p {
+    color: var(--text-primary);
+    font-size: clamp(0.88rem, 1.4vw, 1rem);
+    line-height: 2.1;
+    margin-bottom: 1em;
+  }
+  .overview-text p:last-child { margin-bottom: 0; }
+  .overview-specs {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .spec-item {
+    display: flex;
+    gap: 1.2rem;
+    align-items: baseline;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .spec-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .spec-label {
+    font-family: var(--font-sub);
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    color: var(--amber-light);
+    text-transform: uppercase;
+    min-width: 110px;
+    flex-shrink: 0;
+  }
+  .spec-value {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    color: var(--text-primary);
+  }
+
+  /* ── STORY ── */
+  #story {
+    position: relative;
+    overflow: hidden;
+  }
+  #story::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, var(--dark-base) 0%, transparent 20%, transparent 80%, var(--dark-base) 100%),
+      radial-gradient(ellipse 80% 60% at 20% 50%,
+        rgba(122, 62, 0, 0.15) 0%,
+        transparent 60%);
+  }
+  .story-layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 4rem;
+    margin-top: 3.5rem;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .story-layout { grid-template-columns: 1fr; gap: 2rem; }
+  }
+  .story-aside { position: sticky; top: 4rem; }
+  .story-chapter-num {
+    font-family: var(--font-display);
+    font-size: 8rem;
+    line-height: 1;
+    color: rgba(184, 106, 0, 0.12);
+    letter-spacing: -0.02em;
+    user-select: none;
+  }
+  .story-aside-label {
+    font-family: var(--font-sub);
+    font-size: 0.7rem;
+    letter-spacing: 0.5em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: -1rem;
+  }
+  .story-body { color: var(--text-primary); }
+  .story-body p {
+    font-size: clamp(0.88rem, 1.4vw, 1.02rem);
+    line-height: 2.2;
+    margin-bottom: 1.5em;
+  }
+  .story-body p:last-child { margin-bottom: 0; }
+  .story-body .highlight {
+    color: var(--amber-pale);
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: 1.1em;
+  }
+
+  /* ── CHARACTERS ── */
+  #characters {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 50%,
+        rgba(122, 62, 0, 0.1) 0%,
+        transparent 70%),
+      var(--dark-mid);
+  }
+
+  .char-selector {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    margin-bottom: 3rem;
+    align-items: center;
+  }
+
+  /* ひし形アイコン */
+  .char-btn {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+  .char-btn:hover { transform: scale(1.08); }
+  .char-btn.active .diamond-bg {
+    background: linear-gradient(135deg, var(--amber-mid), var(--amber-deep));
+    border-color: var(--amber-light);
+  }
+  .char-btn.active .diamond-label { color: var(--amber-glow); }
+
+  .diamond-wrap {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    overflow: hidden;
+  }
+  .diamond-bg {
+    width: 100%;
+    height: 100%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+  .diamond-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .diamond-bg .diamond-text {
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.3;
+    padding: 4px;
+  }
+  .diamond-label {
+    position: absolute;
+    bottom: -1.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-sub);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+
+  .char-display {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3rem;
+    align-items: start;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 280px;
+  }
+  .char-display::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 36px; height: 36px;
+    border-top: 1px solid var(--amber-mid);
+    border-right: 1px solid var(--amber-mid);
+  }
+  @media (max-width: 600px) {
+    .char-display { grid-template-columns: 1fr; gap: 1.5rem; }
+  }
+
+  .char-display-image {
+    width: 160px;
+    height: 200px;
+    object-fit: cover;
+    border: 1px solid var(--glass-border);
+    clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+    flex-shrink: 0;
+  }
+  .char-display-placeholder {
+    width: 160px;
+    height: 200px;
+    background: rgba(184, 106, 0, 0.1);
+    border: 1px solid var(--glass-border);
+    clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    flex-shrink: 0;
+  }
+
+  .char-display-info { padding-top: 0.5rem; }
+  .char-display-role {
+    font-family: var(--font-sub);
+    font-size: 0.68rem;
+    letter-spacing: 0.4em;
+    color: var(--amber-light);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .char-display-name {
+    font-family: var(--font-heading);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 400;
+    color: var(--amber-glow);
+    line-height: 1.1;
+    margin-bottom: 0.2rem;
+  }
+  .char-display-sub {
+    font-family: var(--font-sub);
+    font-size: 0.82rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-bottom: 1.2rem;
+  }
+  .char-display-desc {
+    font-size: clamp(0.85rem, 1.3vw, 0.95rem);
+    color: var(--text-secondary);
+    line-height: 2;
+    max-width: 480px;
+     white-space: pre-line;
+  }
+  .char-display-cv {
+    margin-top: 1rem;
+    font-family: var(--font-sub);
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+  }
+  .char-display-cv span { color: var(--amber-pale); }
+
+  /* キャラ切り替えアニメ */
+  .char-display { transition: opacity 0.25s ease; }
+  .char-display.switching { opacity: 0; }
+
+  /* ── GAME SYSTEM ── */
+  #system { position: relative; }
+
+  .system-list {
+    margin-top: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .sys-item {
+    display: flex;
+    gap: 2.5rem;
+    align-items: flex-start;
+    padding: 2.2rem 2.5rem;
+    border: 1px solid var(--glass-border);
+    margin-top: -1px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s ease;
+  }
+  .sys-item:hover { background: var(--glass-bg); }
+
+  .sys-num {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    line-height: 1;
+    color: rgba(184, 106, 0, 0.15);
+    flex-shrink: 0;
+    width: 3rem;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .sys-content { flex: 1; }
+  .sys-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+  .sys-title {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--amber-pale);
+    margin-bottom: 0.5rem;
+  }
+  .sys-body {
+    font-size: 0.87rem;
+    color: var(--text-secondary);
+    line-height: 2;
+    max-width: 620px;
+  }
+
+  /* ── MEDIA ── */
+  #media {
+    background: var(--dark-base);
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+  .media-scroll {
+    margin-top: 2.5rem;
+    display: flex;
+    gap: 1.2rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .media-scroll::-webkit-scrollbar { height: 2px; }
+  .media-scroll::-webkit-scrollbar-track { background: var(--glass-border); }
+  .media-scroll::-webkit-scrollbar-thumb { background: var(--amber-mid); }
+  .media-thumb {
+    flex: 0 0 340px;
+    height: 200px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-family: var(--font-sub);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+  .media-thumb::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(232, 160, 64, 0.04) 0%, transparent 50%);
+  }
+  .media-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    background: #060503;
+    border-top: 1px solid var(--glass-border);
+    padding: clamp(3rem, 7vw, 5rem) clamp(1.5rem, 6vw, 5rem) 2rem;
+  }
+  .footer-inner { max-width: 1060px; margin: 0 auto; }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem 4rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  @media (max-width: 720px) {
+    .footer-top { grid-template-columns: 1fr; gap: 2rem; }
+  }
+  .footer-brand h3 {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    letter-spacing: 0.06em;
+    color: var(--amber-glow);
+    margin-bottom: 0.4rem;
+  }
+  .footer-brand-sub {
+    font-family: var(--font-sub);
+    font-size: 0.68rem;
+    letter-spacing: 0.3em;
+    color: var(--red-soft);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+  .footer-brand p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.9;
+    max-width: 320px;
+  }
+  .footer-nav h4 {
+    font-family: var(--font-sub);
+    font-size: 0.7rem;
+    letter-spacing: 0.45em;
+    color: var(--amber-light);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .footer-nav ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .footer-nav a {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .footer-nav a:hover { color: var(--amber-pale); }
+  .footer-nav a svg { width: 12px; height: 12px; fill: currentColor; }
+
+  .footer-bottom {
+    padding-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .footer-copyright {
+    font-family: var(--font-sub);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+  }
+  .footer-legal-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .footer-legal-links a {
+    font-family: var(--font-sub);
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+  }
+  .footer-legal-links a:hover { color: var(--amber-pale); }
+
+  .disclaimer {
+    margin-top: 1.5rem;
+    padding: 1.4rem 1.8rem;
+    border: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.3);
+  }
+  .disclaimer p {
+    font-size: 0.71rem;
+    color: var(--text-muted);
+    line-height: 2;
+  }
+  .disclaimer p + p { margin-top: 0.5em; }
+  .disclaimer strong {
+    color: var(--amber-light);
+    font-weight: 400;
+  }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+</style>
+</head>
+
+<body>
+
+<!-- ── LOADER ── -->
+<div id="loader">
+  <div class="loader-glass">
+    <svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 8 L68 8 L60 88 L20 88 Z" fill="none" stroke="rgba(232,160,64,0.5)" stroke-width="1.5"/>
+      <clipPath id="liquidClip">
+        <path d="M14 10 L66 10 L58 86 L22 86 Z"/>
+      </clipPath>
+      <g class="glass-liquid" clip-path="url(#liquidClip)">
+        <rect x="0" y="0" width="80" height="96" fill="url(#amberGradient)"/>
+      </g>
+      <g class="ice-cube" transform-origin="40 55">
+        <rect x="26" y="42" width="28" height="20" rx="2" fill="rgba(192,220,232,0.18)" stroke="rgba(232,244,248,0.45)" stroke-width="0.8"/>
+        <rect x="33" y="52" width="14" height="10" rx="1" fill="rgba(192,220,232,0.12)" stroke="rgba(232,244,248,0.3)" stroke-width="0.6"/>
+      </g>
+      <line x1="12" y1="8" x2="68" y2="8" stroke="rgba(232,160,64,0.8)" stroke-width="1.5"/>
+      <defs>
+        <linearGradient id="amberGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8a040" stop-opacity="0.7"/>
+          <stop offset="60%" stop-color="#7a3e00" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#3a1800" stop-opacity="0.9"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <p class="loader-label">BAR DERAS</p>
+  <div class="loader-bar-wrap">
+    <div class="loader-bar"></div>
+  </div>
+</div>
+
+<!-- ── NAV ── -->
+<nav>
+  <span class="nav-logo">Bar Deras</span>
+  <ul class="nav-links">
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#story">Story</a></li>
+    <li><a href="#characters">Characters</a></li>
+    <li><a href="#system">System</a></li>
+    <li>
+      <a href="https://x.com/w73KFSEsCh70014" target="_blank" rel="noopener noreferrer" class="nav-x-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        X
+      </a>
+    </li>
+  </ul>
+</nav>
+
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-particles" id="heroParticles"></div>
+
+  <p class="hero-fan-badge">非公式ファンゲーム — Unofficial Fan Game</p>
+  <p class="hero-eyebrow">2026 — PC / ブラウザ対応 — Free to Play</p>
+  <h1 class="hero-title">BAR<br>DERAS</h1>
+  <p class="hero-title-jp">デラス</p>
+  <p class="hero-subtitle">— 夜が深くなるほど、酒は旨くなる —</p>
+
+  <div class="hero-divider">
+    <span></span><i>◆</i><span></span>
+  </div>
+
+  <p class="hero-desc">
+    扉を開けば、そこは静かな夜の酒場。<br>
+    今日もこのバーでは、あなたがバーテンダーとしてお客をもてなす<br>
+    彼らの語りに耳を傾けながら、一杯を傾けよう。
+  </p>
+
+  <div class="hero-cta">
+    <a href="#" class="btn-primary">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>
+      未定
+    </a>
+    <a href="#story" class="btn-ghost">ストーリーを見る</a>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+
+<!-- ── OVERVIEW ── -->
+<section id="overview">
+  <div class="section-inner">
+    <span class="section-tag reveal">Game Overview</span>
+    <h2 class="section-heading reveal reveal-delay-1">ゲーム概要</h2>
+
+    <div class="overview-grid">
+      <div class="overview-text reveal reveal-delay-2">
+        <p>
+          『Bar Deras -デラス-』は、にじさんじ所属ライバー・ベルモンド・バンデラスを主人公とした非公式ファン制作のビジュアルノベルゲームです。
+          プレイヤーはとある理由でバーで働くことになった主人公となり、夜な夜な訪れる様々な客と交流しながら、彼らの話に耳を傾け、一杯の酒を提供していきます。
+        </p>
+        <p>
+          ウイスキーの香りただよう薄暗い店内。カウンター越しに交わされる言葉は、時に軽快な冗談であり、時に深夜の静けさに似た哲学的な問いかけです。
+          彼らの話に耳を傾け、選択肢を選びながら、あなただけの夜を作り上げていきましょう。
+        </p>
+        <p>
+          本作はファンによる愛の結晶であり、にじさんじ及びANYCOLOR株式会社の公式作品ではありません。収益目的での配布は行っておらず、完全無料でお楽しみいただけます。
+        </p>
+      </div>
+
+      <div class="overview-specs reveal reveal-delay-3">
+        <div class="spec-item">
+          <span class="spec-label">ジャンル</span>
+          <span class="spec-value">ビジュアルノベル / バー体験型ADV</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">対応環境</span>
+          <span class="spec-value">PC ブラウザ / Windows</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">価格</span>
+          <span class="spec-value">完全無料</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">プレイ人数</span>
+          <span class="spec-value">1人</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">プレイ時間</span>
+          <span class="spec-value">約1〜2時間（ルートにより異なる）</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-label">制作</span>
+          <span class="spec-value">非公式ファン制作</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider-line"></div>
+
+
+<!-- ── STORY ── -->
+<section id="story">
+  <div class="section-inner">
+    <span class="section-tag reveal">Story</span>
+    <h2 class="section-heading reveal reveal-delay-1">ストーリー</h2>
+
+    <div class="story-layout">
+      <div class="story-aside reveal reveal-delay-1">
+        <div class="story-chapter-num">01</div>
+        <p class="story-aside-label">Prologue</p>
+      </div>
+
+      <div class="story-body reveal reveal-delay-2">
+        <p>
+          <span class="highlight">「——いらっしゃい。今夜は一人かい？」</span>
+        </p>
+        <p>
+            夢を見るものしか訪れることのできない、夜の帳に包まれたバー「デラス」。
+            そこは、日常の喧騒から切り離された静かな空間。
+        </p>
+        <p>
+          「Bar Deras」は、夜ごとに訪れる客たちの話に耳を傾け、一杯を提供する場所。
+           彼らの話は、時に軽妙なものから、時に深夜の静けさに似た哲学的なものまで様々です。
+           あなたはこのバーで、どんな夜を過ごすでしょうか。
+        </p>
+        <p>
+            これは、夜が深くなるほどに味わいを増す、静かな語りの物語。
+            あなたの世界では決して聞くことができない、異世界の人々の話に耳を傾けながら、夜の空気を感じてみてください。
+            ふだんは脇役の方々がとある主役たちを語る、そんな夜の物語が、今始まります。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider-line"></div>
+
+
+<!-- ── CHARACTERS ── -->
+<section id="characters">
+  <div class="section-inner">
+    <div class="characters-header">
+      <span class="section-tag reveal">Characters</span>
+      <h2 class="section-heading reveal reveal-delay-1">登場人物</h2>
+      <p class="section-lead reveal reveal-delay-2">
+        バー・デラスに集う人々。彼らの語りが、夜をより深くする。
+      </p>
+    </div>
+
+    <!-- キャラ選択ひし形アイコン -->
+    <div class="char-selector reveal reveal-delay-2" id="charSelector">
+      <!-- キャラクターボタンはJSで生成 -->
+    </div>
+
+    <!-- キャラ表示エリア -->
+    <div class="char-display reveal reveal-delay-3" id="charDisplay">
+      <div class="char-display-placeholder" id="charImg">🍸</div>
+      <div class="char-display-info">
+        <p class="char-display-role" id="charRole">Bartender</p>
+        <h3 class="char-display-name" id="charName">ベルモンド・バンデラス</h3>
+        <p class="char-display-sub" id="charSub">BELMOND BANDERAS</p>
+        <p class="char-display-desc" id="charDesc">
+          バー「デラス」のマスター。物静かで落ち着いた雰囲気を纏いながらも、話し始めると止まらない語り上手。
+          お酒の知識は深く、客の好みや気分を読んで最適な一杯を提供する。
+          今回はとある理由で、プレイヤーにお見せを任せることとなり、その間は友人たちの国や世界に旅行に出かけることに。
+          彼の不在中、プレイヤーはバーを切り盛りしながら、訪れる客たちと交流していくことになります。
+        </p>
+        <p class="char-display-cv" id="charCv">CV: <span>ベルモンド・バンデラス（にじさんじ所属）</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider-line"></div>
+
+
+<!-- ── GAME SYSTEM ── -->
+<section id="system">
+  <div class="section-inner">
+    <span class="section-tag reveal">Game System</span>
+    <h2 class="section-heading reveal reveal-delay-1">ゲームシステム</h2>
+    <p class="section-lead reveal reveal-delay-2">
+      選択と対話が織りなす、一夜限りのバー体験。
+    </p>
+
+    <div class="system-list reveal reveal-delay-2">
+
+
+
+      <div class="sys-item">
+        <span class="sys-num">01</span>
+        <div class="sys-content">
+          <div class="sys-icon">🥃</div>
+          <h3 class="sys-title">カクテル注文</h3>
+          <p class="sys-body">
+            お客のオーダーしたカクテルを、異世界の素材を使いて調合するシステム。
+            レシピはゲージなどで教えてくれたり、中にはお客がヒントをくれたりもします。
+          </p>
+        </div>
+      </div>
+
+
+      <!--
+      追加システム項目はここにコピー＆ペーストで追加できます
+      <div class="sys-item">
+        <span class="sys-num">04</span>
+        <div class="sys-content">
+          <div class="sys-icon">✨</div>
+          <h3 class="sys-title">システム名</h3>
+          <p class="sys-body">説明文</p>
+        </div>
+      </div>
+      -->
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ── MEDIA ── -->
+<section id="media">
+  <div class="section-inner">
+    <span class="section-tag reveal">Media</span>
+    <h2 class="section-heading reveal reveal-delay-1">スクリーンショット</h2>
+  </div>
+
+  <div class="media-scroll">
+    <div class="media-thumb">Screenshot 01</div>
+    <div class="media-thumb">Screenshot 02</div>
+    <div class="media-thumb">Screenshot 03</div>
+    <div class="media-thumb">Screenshot 04</div>
+    <div class="media-thumb">Screenshot 05</div>
+  </div>
+</section>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+
+      <div class="footer-brand">
+        <h3>Bar Deras -デラス-</h3>
+        <span class="footer-brand-sub">非公式ファンゲーム — Unofficial Fan Game</span>
+        <p>
+          ベルモンド・バンデラスへの愛を込めて制作した非公式ファンゲームです。
+          にじさんじ及びANYCOLOR株式会社の公式作品・公認作品ではありません。
+          収益目的での配布は行っておらず、完全無料でご利用いただけます。
+        </p>
+      </div>
+
+      <nav class="footer-nav">
+        <h4>Pages</h4>
+        <ul>
+          <li><a href="#overview">ゲーム概要</a></li>
+          <li><a href="#story">ストーリー</a></li>
+          <li><a href="#characters">キャラクター</a></li>
+          <li><a href="#system">ゲームシステム</a></li>
+          <li><a href="#media">メディア</a></li>
+          <li>
+            <a href="https://x.com/w73KFSEsCh70014" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              公式X（Twitter）
+            </a>
+          </li>
+          <!-- <li><a href="#">お問い合わせ</a></li> -->
+          <li><a href="#">プライバシーポリシー</a></li>
+        </ul>
+      </nav>
+
+    </div>
+
+    <!-- 注意事項 -->
+    <div class="disclaimer">
+      <p>
+        <strong>【重要事項・免責事項】</strong>
+      </p>
+      <p>
+        本作品『Bar Deras -デラス-』は、にじさんじ所属ライバー「ベルモンド・バンデラス」を題材とした個人制作の非公式ファンゲームです。
+        ANYCOLOR株式会社、にじさんじ、及び関連権利者の公式作品・公認作品・ライセンス作品ではありません。
+      </p>
+      <p>
+        本作品はファンによる非営利目的の創作物であり、一切の商業利用・収益化を行っておりません。
+        本作品の内容はキャラクターを制作・所属する権利者の見解・公式設定とは無関係であり、二次創作の範囲内で制作されております。
+      </p>
+      <p>
+        本作品に含まれるキャラクター・名称・設定の著作権は、それぞれの権利者に帰属します。
+        本作品の映像・テキスト・音楽（ファンオリジナル素材を除く）を無断で転載・複製・再配布・商業利用することを禁じます。
+      </p>
+      <p>
+        にじさんじのファンコンテンツポリシーに則り制作・公開しておりますが、権利者からの申し出があった場合は速やかに対応いたします。
+        本作品に関するご意見・ご要望は公式X（@w73KFSEsCh70014）までお問い合わせください。
+      </p>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copyright">
+        © 2026 Bar Deras Fan Project. | キャラクター・設定の著作権はANYCOLOR株式会社に帰属します。
+      </p>
+      <div class="footer-legal-links">
+        <a href="#">プライバシーポリシー</a>
+        <!-- <a href="#">お問い合わせ</a> -->
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+
+<!-- ── SCRIPTS ── -->
+<script>
+  // ── LOADER ──────────────────────────
+  window.addEventListener('load', () => {
+    const minDisplay = 2800;
+    const start = Date.now();
+    const loader = document.getElementById('loader');
+    function hideLoader() {
+      const elapsed = Date.now() - start;
+      const wait = Math.max(0, minDisplay - elapsed);
+      setTimeout(() => {
+        loader.classList.add('hidden');
+        document.body.style.overflow = '';
+      }, wait);
+    }
+    hideLoader();
+  });
+  document.body.style.overflow = 'hidden';
+
+  // ── HERO PARTICLES ──────────────────
+  (function() {
+    const container = document.getElementById('heroParticles');
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 3 + 1;
+      p.style.cssText = `
+        width: ${size}px;
+        height: ${size}px;
+        left: ${Math.random() * 100}%;
+        animation-duration: ${Math.random() * 8 + 6}s;
+        animation-delay: ${Math.random() * 8}s;
+      `;
+      container.appendChild(p);
+    }
+  })();
+
+  // ── CHARACTER DATA ───────────────────
+const characters = [
+    {
+      id: 'belmond',
+      label: 'Belmond',
+      role: 'Bartender / Owner',
+      name: 'ベルモンド・バンデラス',
+      sub: 'BELMOND BANDERAS',
+      icon: '🥃',
+      img: '', // 画像URLをここに入れてください（例: './images/belmond.png'）
+      desc: `バー「デラス」のマスター。物静かで落ち着いた雰囲気を纏いながらも、話し始めると止まらない語り上手。
+お酒の知識は深く、客の好みや気分を読んで最適な一杯を提供する。
+今回はとある理由で、プレイヤーにお見せを任せることとなり、その間は友人たちの国や世界に旅行に出かけることに。
+彼の不在中、プレイヤーはバーを切り盛りしながら、訪れる客たちと交流していくことになります。`,
+      cv: 'ベルモンド・バンデラス（にじさんじ所属）',
+    },
+    {
+      id: 'char2',
+      label: 'Guest A',
+      role: 'Regular Customer',
+      name: 'あなた',
+      sub: 'CHARACTER NAME',
+      icon: '🍸',
+      img: '', // 画像URLをここに入れてください
+      desc: `夢の世界に迷い込んだあなた
+バー「デラス」のベルモンドに拾われ、彼が不在の間だけバーテンダーをやることになった
+訪れる客は自分とは違う世界の住人たちのため、驚きはあるものの、彼らの話に耳を傾けながら、最適な一杯を提供していくことになります。
+このバーでの経験が、あなたの世界での日常や価値観にどんな影響を与えるのかは、あなた次第。`,
+      cv: '',
+    },
+    {
+      id: 'char3',
+      label: 'Guest B',
+      role: 'Mysterious Guest',
+      name: 'とある錬金術師組合の幹部',
+      sub: 'CHARACTER NAME',
+      icon: '🌙',
+      img: '', // 画像URLをここに入れてください
+      desc: `ヘルエスタ王国直属の錬金術師組合の幹部。
+厳格な役職でありながら、バーに訪れては愚痴をこぼし続けるほどストレスが溜まっている
+聞いた話では、赤髪の女性が彼氏を作るために日夜人体錬成をしようとしていていたりと問題児すぎるらしい
+しかし、能力の高さや皇女と親密であるため、組合内でも扱いに困っているらしい`,
+      cv: '',
+    },
+    // キャラクターを追加する場合はここにオブジェクトを追加してください
+];
+
+  // ── CHARACTER UI GENERATION ─────────
+  const selector = document.getElementById('charSelector');
+  const display = document.getElementById('charDisplay');
+
+  let activeChar = 0;
+
+  function renderButtons() {
+    selector.innerHTML = '';
+    characters.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'char-btn' + (i === activeChar ? ' active' : '');
+      btn.setAttribute('aria-label', c.name);
+      btn.innerHTML = `
+        <div class="diamond-wrap">
+          <div class="diamond-bg">
+            ${c.img
+              ? `<img src="${c.img}" alt="${c.name}">`
+              : `<div class="diamond-text">${c.icon}</div>`
+            }
+          </div>
+        </div>
+        <span class="diamond-label">${c.label}</span>
+      `;
+      btn.addEventListener('click', () => selectChar(i));
+      selector.appendChild(btn);
+    });
+  }
+
+  function selectChar(index) {
+    if (index === activeChar) return;
+    activeChar = index;
+    const c = characters[index];
+
+    display.classList.add('switching');
+    setTimeout(() => {
+      updateDisplay(c);
+      display.classList.remove('switching');
+    }, 250);
+
+    renderButtons();
+  }
+
+  function updateDisplay(c) {
+    const imgEl = document.getElementById('charImg');
+    if (c.img) {
+      imgEl.outerHTML = `<img class="char-display-image" id="charImg" src="${c.img}" alt="${c.name}">`;
+    } else {
+      const current = document.getElementById('charImg');
+      if (current.tagName === 'IMG') {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'char-display-placeholder';
+        placeholder.id = 'charImg';
+        placeholder.textContent = c.icon;
+        current.replaceWith(placeholder);
+      } else {
+        current.textContent = c.icon;
+      }
+    }
+    document.getElementById('charRole').textContent = c.role;
+    document.getElementById('charName').textContent = c.name;
+    document.getElementById('charSub').textContent = c.sub;
+    document.getElementById('charDesc').textContent = c.desc;
+    const cvEl = document.getElementById('charCv');
+    if (c.cv) {
+      cvEl.style.display = '';
+      cvEl.innerHTML = `CV: <span>${c.cv}</span>`;
+    } else {
+      cvEl.style.display = 'none';
+    }
+  }
+
+  renderButtons();
+  updateDisplay(characters[0]);
+
+  // ── SCROLL REVEAL ────────────────────
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => observer.observe(el));
+
+  // ── NAV BACKGROUND ───────────────────
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 80
+      ? 'rgba(10,7,4,0.92)'
+      : 'linear-gradient(to bottom, rgba(10,7,4,0.85) 0%, transparent 100%)';
+  });
+</script>
+
+</body>
+</html>
