@@ -49,23 +49,29 @@ class Crop:
 
 class SpriteCell:
     """スプライトシート上の1マス"""
-    def __init__(self, row, col, crop_id=None, offset_x=0, offset_y=0):
+    def __init__(self, row, col, crop_id=None, offset_x=0, offset_y=0, scale=1.0):
         self.row = row
         self.col = col
         self.crop_id = crop_id
         self.offset_x = offset_x  # 微調整オフセット
         self.offset_y = offset_y
+        self.scale = scale
 
     def to_dict(self):
         return {
             "row": self.row, "col": self.col,
             "crop_id": self.crop_id,
-            "offset_x": self.offset_x, "offset_y": self.offset_y
+            "offset_x": self.offset_x, "offset_y": self.offset_y,
+            "scale": self.scale
         }
 
     @classmethod
     def from_dict(cls, d):
-        return cls(d["row"], d["col"], d.get("crop_id"), d.get("offset_x", 0), d.get("offset_y", 0))
+        return cls(
+            d["row"], d["col"], d.get("crop_id"),
+            d.get("offset_x", 0), d.get("offset_y", 0),
+            d.get("scale", 1.0)
+        )
 
 
 class Project:
@@ -94,14 +100,15 @@ class Project:
                 return c
         return None
 
-    def set_cell(self, row, col, crop_id, offset_x=0, offset_y=0):
+    def set_cell(self, row, col, crop_id, offset_x=0, offset_y=0, scale=1.0):
         existing = self.get_cell(row, col)
         if existing:
             existing.crop_id = crop_id
             existing.offset_x = offset_x
             existing.offset_y = offset_y
+            existing.scale = scale
         else:
-            self.cells.append(SpriteCell(row, col, crop_id, offset_x, offset_y))
+            self.cells.append(SpriteCell(row, col, crop_id, offset_x, offset_y, scale))
 
     def clear_cell(self, row, col):
         self.cells = [c for c in self.cells if not (c.row == row and c.col == col)]
@@ -197,9 +204,14 @@ class CropEditorPanel(tk.Toplevel):
         # ドラッグ状態
         self.drag_start = None
         self.drag_rect = None  # (x0,y0,x1,y1) canvas座標
+        self.drag_action = None
+        self.drag_handle = None
+        self.drag_crop = None
+        self.drag_orig = None
 
         # 既存crops (この画像のもの)
         self.crops_here = [c for c in project.crops if c.source_file == source_file]
+        self.selected_crop = None
 
         self._build_ui()
         self._fit_zoom()
@@ -272,7 +284,7 @@ class CropEditorPanel(tk.Toplevel):
                                        font=("Consolas", 9), relief=tk.FLAT,
                                        highlightthickness=0)
         self.crop_listbox.pack(fill=tk.BOTH, expand=True)
-        self.crop_listbox.bind("<<ListboxSelect>>", lambda e: self._redraw())
+        self.crop_listbox.bind("<<ListboxSelect>>", lambda e: self._on_crop_select())
         self._refresh_listbox()
 
         self.geometry("900x650")
@@ -281,6 +293,53 @@ class CropEditorPanel(tk.Toplevel):
         self.crop_listbox.delete(0, tk.END)
         for c in self.crops_here:
             self.crop_listbox.insert(tk.END, f"{c.label} ({c.w}×{c.h})")
+        if self.selected_crop in self.crops_here:
+            idx = self.crops_here.index(self.selected_crop)
+            self.crop_listbox.select_set(idx)
+
+    def _on_crop_select(self):
+        sel = self.crop_listbox.curselection()
+        if sel:
+            self.selected_crop = self.crops_here[sel[0]]
+        else:
+            self.selected_crop = None
+        self._redraw()
+
+    def _is_near(self, a, b, tol=8):
+        return abs(a - b) <= tol / self.zoom
+
+    def _find_crop_at(self, ix, iy):
+        for idx, crop in enumerate(self.crops_here):
+            x0, y0 = crop.x, crop.y
+            x1, y1 = crop.x + crop.w, crop.y + crop.h
+            handle = None
+            if self._is_near(ix, x0) and self._is_near(iy, y0):
+                handle = "nw"
+            elif self._is_near(ix, x1) and self._is_near(iy, y0):
+                handle = "ne"
+            elif self._is_near(ix, x0) and self._is_near(iy, y1):
+                handle = "sw"
+            elif self._is_near(ix, x1) and self._is_near(iy, y1):
+                handle = "se"
+            elif self._is_near(ix, x0) and y0 < iy < y1:
+                handle = "w"
+            elif self._is_near(ix, x1) and y0 < iy < y1:
+                handle = "e"
+            elif self._is_near(iy, y0) and x0 < ix < x1:
+                handle = "n"
+            elif self._is_near(iy, y1) and x0 < ix < x1:
+                handle = "s"
+            elif x0 < ix < x1 and y0 < iy < y1:
+                handle = "inside"
+            if handle:
+                return crop, idx, handle
+        return None, None, None
+
+    def _clamp_crop(self, crop):
+        crop.x = max(0, min(crop.x, self.ow - 1))
+        crop.y = max(0, min(crop.y, self.oh - 1))
+        crop.w = max(1, min(crop.w, self.ow - crop.x))
+        crop.h = max(1, min(crop.h, self.oh - crop.y))
 
     def _fit_zoom(self):
         self.update_idletasks()
@@ -308,17 +367,71 @@ class CropEditorPanel(tk.Toplevel):
         return ix * self.zoom + self.offset_x, iy * self.zoom + self.offset_y
 
     def _on_mouse_down(self, event):
+        ix, iy = self._canvas_to_img(event.x, event.y)
+        crop, idx, handle = self._find_crop_at(ix, iy)
+        if crop:
+            self.selected_crop = crop
+            self.crop_listbox.selection_clear(0, tk.END)
+            self.crop_listbox.select_set(idx)
+            self.drag_action = "move" if handle == "inside" else "resize"
+            self.drag_handle = handle
+            self.drag_crop = crop
+            self.drag_orig = (crop.x, crop.y, crop.w, crop.h)
+            self.drag_start = (ix, iy)
+            self.drag_rect = None
+            self._redraw()
+            return
+
+        self.selected_crop = None
+        self.drag_action = None
+        self.drag_handle = None
+        self.drag_crop = None
+        self.drag_orig = None
         self.drag_start = (event.x, event.y)
         self.drag_rect = None
 
     def _on_mouse_drag(self, event):
+        if self.drag_action and self.drag_crop and self.drag_start:
+            ix, iy = self._canvas_to_img(event.x, event.y)
+            x0, y0, w0, h0 = self.drag_orig
+            x1 = x0 + w0
+            y1 = y0 + h0
+            if self.drag_action == "move":
+                dx = ix - self.drag_start[0]
+                dy = iy - self.drag_start[1]
+                self.drag_crop.x = int(max(0, min(self.ow - self.drag_crop.w, x0 + dx)))
+                self.drag_crop.y = int(max(0, min(self.oh - self.drag_crop.h, y0 + dy)))
+            else:
+                nx0, ny0, nx1, ny1 = x0, y0, x1, y1
+                if "w" in self.drag_handle:
+                    nx0 = min(max(0, ix), x1 - 1)
+                if "e" in self.drag_handle:
+                    nx1 = max(x0 + 1, min(self.ow, ix))
+                if "n" in self.drag_handle:
+                    ny0 = min(max(0, iy), y1 - 1)
+                if "s" in self.drag_handle:
+                    ny1 = max(y0 + 1, min(self.oh, iy))
+                self.drag_crop.x = int(nx0)
+                self.drag_crop.y = int(ny0)
+                self.drag_crop.w = int(max(1, nx1 - nx0))
+                self.drag_crop.h = int(max(1, ny1 - ny0))
+            self._clamp_crop(self.drag_crop)
+            self._refresh_listbox()
+            self._redraw()
+            return
+
         if self.drag_start:
             x0, y0 = self.drag_start
             self.drag_rect = (x0, y0, event.x, event.y)
             self._redraw()
 
     def _on_mouse_up(self, event):
-        if self.drag_start and self.drag_rect:
+        if self.drag_action and self.drag_crop:
+            self.drag_action = None
+            self.drag_handle = None
+            self.drag_crop = None
+            self.drag_orig = None
+        elif self.drag_start and self.drag_rect:
             x0, y0, x1, y1 = self.drag_rect
             if abs(x1-x0) > 5 and abs(y1-y0) > 5:
                 ix0, iy0 = self._canvas_to_img(min(x0,x1), min(y0,y1))
@@ -380,17 +493,25 @@ class CropEditorPanel(tk.Toplevel):
 
         sel = self.crop_listbox.curselection()
         sel_idx = sel[0] if sel else -1
+        if self.selected_crop:
+            self.info_label.config(text=f"選択: {self.selected_crop.label} {self.selected_crop.w}×{self.selected_crop.h}")
+        else:
+            self.info_label.config(text="ドラッグで矩形を選択。既存矩形をクリックして移動/リサイズ")
 
         # 既存crops
         for i, c in enumerate(self.crops_here):
             cx0, cy0 = self._img_to_canvas(c.x, c.y)
             cx1, cy1 = self._img_to_canvas(c.x+c.w, c.y+c.h)
-            color = "#f0c040" if i == sel_idx else "#4a90d9"
+            color = "#f0c040" if c == self.selected_crop else "#4a90d9"
             self.canvas.create_rectangle(cx0, cy0, cx1, cy1,
                                          outline=color, width=2, dash=(4,3))
             self.canvas.create_text(cx0+2, cy0+2, text=c.label,
                                     anchor=tk.NW, fill=color,
                                     font=("Consolas", 8))
+            if c == self.selected_crop:
+                for px, py in [(cx0, cy0), (cx1, cy0), (cx0, cy1), (cx1, cy1)]:
+                    self.canvas.create_rectangle(px-4, py-4, px+4, py+4,
+                                                 fill="#f0c040", outline="")
 
         # ドラッグ中
         if self.drag_rect:
@@ -453,6 +574,8 @@ class SheetEditorPanel(tk.Frame):
         vbar.config(command=self.canvas.yview)
 
         self.canvas.bind("<ButtonPress-1>", self._on_click)
+        self.canvas.bind("<B1-Motion>", self._on_mouse_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._on_mouse_up)
         self.canvas.bind("<Motion>", self._on_motion)
         self.canvas.bind("<MouseWheel>", self._on_wheel)
         self.canvas.bind("<Button-4>", self._on_wheel)
@@ -493,7 +616,38 @@ class SheetEditorPanel(tk.Frame):
         if rc:
             self.selected_cell = rc
             self.on_update("cell_select", rc)
+            p = self.project
+            cell = p.get_cell(*rc)
+            if cell and cell.crop_id is not None:
+                self.drag_info = {
+                    "start_x": cx,
+                    "start_y": cy,
+                    "cell": rc,
+                    "orig_offset": (cell.offset_x, cell.offset_y)
+                }
+            else:
+                self.drag_info = None
             self.redraw()
+
+    def _on_mouse_drag(self, event):
+        if not self.drag_info:
+            return
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        dx = cx - self.drag_info["start_x"]
+        dy = cy - self.drag_info["start_y"]
+        row, col = self.drag_info["cell"]
+        cell = self.project.get_cell(row, col)
+        if cell is None:
+            return
+        orig_x, orig_y = self.drag_info["orig_offset"]
+        cell.offset_x = int(orig_x + dx / self.zoom)
+        cell.offset_y = int(orig_y + dy / self.zoom)
+        self.on_update("cell_select", (row, col))
+        self.redraw()
+
+    def _on_mouse_up(self, event):
+        self.drag_info = None
 
     def redraw(self):
         self.canvas.delete("all")
@@ -538,11 +692,11 @@ class SheetEditorPanel(tk.Frame):
                         ci = self.img_man.get_crop_image(crop)
                         if ci:
                             # セル中央に配置 + オフセット
-                            cix = int(x0 + zw/2 - ci.width*self.zoom/2 + cell.offset_x*self.zoom)
-                            ciy = int(y0 + zh/2 - ci.height*self.zoom/2 + cell.offset_y*self.zoom)
-                            disp = ci.resize((max(1,int(ci.width*self.zoom)),
-                                              max(1,int(ci.height*self.zoom))),
-                                             Image.NEAREST)
+                            disp_w = int(ci.width * cell.scale * self.zoom)
+                            disp_h = int(ci.height * cell.scale * self.zoom)
+                            cix = int(x0 + zw/2 - disp_w/2 + cell.offset_x*self.zoom)
+                            ciy = int(y0 + zh/2 - disp_h/2 + cell.offset_y*self.zoom)
+                            disp = ci.resize((max(1, disp_w), max(1, disp_h)), Image.NEAREST)
                             tk_ci = ImageTk.PhotoImage(disp)
                             self.canvas.create_image(cix, ciy, anchor=tk.NW, image=tk_ci)
                             # キャッシュ保持
@@ -719,6 +873,22 @@ class SpriteSheetApp(tk.Tk):
                                       fg="#666688", font=("Consolas", 8))
         self.offset_label.pack()
 
+        scale_frame = tk.Frame(sec3, bg="#1a1a2e")
+        scale_frame.pack(pady=4)
+        tk.Button(scale_frame, text="拡大", bg="#2a2a4a", fg="#e0e0e0",
+                  relief=tk.FLAT, padx=6, pady=3, cursor="hand2",
+                  font=("Consolas", 8), command=lambda: self._adjust_scale(10)).pack(side=tk.LEFT, padx=2)
+        tk.Button(scale_frame, text="縮小", bg="#2a2a4a", fg="#e0e0e0",
+                  relief=tk.FLAT, padx=6, pady=3, cursor="hand2",
+                  font=("Consolas", 8), command=lambda: self._adjust_scale(-10)).pack(side=tk.LEFT, padx=2)
+        tk.Button(scale_frame, text="リセット", bg="#555577", fg="white",
+                  relief=tk.FLAT, padx=6, pady=3, cursor="hand2",
+                  font=("Consolas", 8), command=self._reset_scale).pack(side=tk.LEFT, padx=2)
+
+        self.scale_label = tk.Label(sec3, text="scale: 100%", bg="#1a1a2e",
+                                    fg="#666688", font=("Consolas", 8))
+        self.scale_label.pack()
+
         # --- シート情報 ---
         sec4 = self._section(parent, "📐 シート設定")
         self.sheet_info = tk.Label(sec4, text="", bg="#1a1a2e", fg="#888",
@@ -767,9 +937,11 @@ class SpriteSheetApp(tk.Tk):
             self.sel_info.config(text=f"[行{row+1}, 列{col+1}] {name}",
                                  fg="#f0c040")
             self.offset_label.config(text=f"offset: ({cell.offset_x}, {cell.offset_y})")
+            self.scale_label.config(text=f"scale: {int(cell.scale*100)}%")
         else:
             self.sel_info.config(text=f"[行{row+1}, 列{col+1}] 空", fg="#888")
             self.offset_label.config(text="offset: (0, 0)")
+            self.scale_label.config(text="scale: 100%")
 
     def _adjust_offset(self, dx, dy):
         if self.sheet_editor.selected_cell is None:
@@ -792,6 +964,27 @@ class SpriteSheetApp(tk.Tk):
         if cell:
             cell.offset_x = 0
             cell.offset_y = 0
+            self._update_sel_info(row, col)
+            self.sheet_editor.redraw()
+
+    def _adjust_scale(self, delta_percent):
+        if self.sheet_editor.selected_cell is None:
+            return
+        row, col = self.sheet_editor.selected_cell
+        cell = self.project.get_cell(row, col)
+        if cell is None or cell.crop_id is None:
+            return
+        cell.scale = max(0.1, min(10.0, cell.scale * (1 + delta_percent / 100.0)))
+        self._update_sel_info(row, col)
+        self.sheet_editor.redraw()
+
+    def _reset_scale(self):
+        if self.sheet_editor.selected_cell is None:
+            return
+        row, col = self.sheet_editor.selected_cell
+        cell = self.project.get_cell(row, col)
+        if cell:
+            cell.scale = 1.0
             self._update_sel_info(row, col)
             self.sheet_editor.redraw()
 
@@ -855,7 +1048,12 @@ class SpriteSheetApp(tk.Tk):
             row = i // p.cols
             col = i % p.cols
             if row < p.rows:
-                p.set_cell(row, col, crop.id)
+                ci = self.img_man.get_crop_image(crop)
+                scale = 1.0
+                if ci is not None:
+                    cw, ch = p.cell_size()
+                    scale = min(1.0, cw / ci.width, ch / ci.height)
+                p.set_cell(row, col, crop.id, scale=scale)
         self.sheet_editor.redraw()
         messagebox.showinfo("完了", f"{min(len(p.crops), p.rows*p.cols)}個のCropを配置しました")
 
@@ -994,6 +1192,9 @@ class SpriteSheetApp(tk.Tk):
                 ci = self.img_man.get_crop_image(crop)
                 if ci is None:
                     continue
+                if cell.scale != 1.0:
+                    ci = ci.resize((max(1, int(ci.width * cell.scale)),
+                                    max(1, int(ci.height * cell.scale))), Image.NEAREST)
 
                 # セル中央座標
                 cx = cell.col * cw + cw / 2
